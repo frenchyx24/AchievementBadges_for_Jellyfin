@@ -350,14 +350,15 @@ public class AchievementBadgesController : ControllerBase
     {
         limit = Math.Clamp(limit, 1, 50);
 
-        var badges = _badgeService.GetBadgesForUser(userId)
+        return Ok(RecentUnlocks(_badgeService.GetBadgesForUser(userId), limit));
+    }
+
+    private static List<AchievementBadge> RecentUnlocks(IEnumerable<AchievementBadge> all, int limit)
+        => all
             .Where(b => b.Unlocked && b.UnlockedAt.HasValue)
             .OrderByDescending(b => b.UnlockedAt)
             .Take(limit)
             .ToList();
-
-        return Ok(badges);
-    }
 
     [HttpGet("users/{userId}/next-badges")]
     [ProducesResponseType(typeof(List<AchievementBadge>), StatusCodes.Status200OK)]
@@ -365,15 +366,58 @@ public class AchievementBadgesController : ControllerBase
     {
         limit = Math.Clamp(limit, 1, 20);
 
-        var badges = _badgeService.GetBadgesForUser(userId)
+        return Ok(NextBadges(_badgeService.GetBadgesForUser(userId), limit));
+    }
+
+    private static List<AchievementBadge> NextBadges(IEnumerable<AchievementBadge> all, int limit)
+        => all
             .Where(b => !b.Unlocked && b.TargetValue > 0)
             .OrderByDescending(b => (double)b.CurrentValue / b.TargetValue)
             .ThenBy(b => b.TargetValue - b.CurrentValue)
             .Take(limit)
             .ToList();
 
-        return Ok(badges);
+    /// <summary>
+    /// One-call aggregate for the Nflix clients: badges, summary, rank,
+    /// equipped, rarity stats, level/XP, streak, recent, next and season.
+    /// {userId} keeps it under the UserOwnershipFilter like users/{userId}.
+    /// </summary>
+    [HttpGet("users/{userId}/nflix")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult GetNflixAggregate([FromRoute] string userId)
+    {
+        const string lang = "fr";
+        var badges = _badgeService.GetBadgesForUser(userId);
+        foreach (var b in badges) Helpers.BadgeLocalizer.Localize(b, lang);
+        var equipped = _badgeService.GetEquippedBadges(userId);
+        foreach (var b in equipped) Helpers.BadgeLocalizer.Localize(b, lang);
+        var summary = _badgeService.GetSummary(userId);
+        var level = LevelHelper.FromBadges(badges);
+        var season = SeasonHelper.At(DateTime.UtcNow);
+
+        return Ok(new
+        {
+            SchemaVersion = 1,
+            Language = lang,
+            Badges = badges,
+            Summary = summary,
+            Rank = BuildRank(summary),
+            Equipped = equipped,
+            RarityStats = _badgeService.GetBadgeRarityPercentages(),
+            Level = new { level.Level, level.Xp, level.XpIntoLevel, level.XpForNextLevel, level.Title },
+            Streak = new
+            {
+                Current = SummaryInt(summary, "CurrentWatchStreak"),
+                Best = SummaryInt(summary, "BestWatchStreak")
+            },
+            Recent = RecentUnlocks(badges, 10),
+            Next = NextBadges(badges, 6),
+            Seasonal = new { season.Active, season.Name, EndsAt = season.EndsAt?.ToString("o") }
+        });
     }
+
+    private static int SummaryInt(object summary, string name)
+        => summary.GetType().GetProperty(name)?.GetValue(summary) is int v ? v : 0;
 
     [HttpGet("users/{userId}/playback-state")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -1119,7 +1163,11 @@ public class AchievementBadgesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult GetRank([FromRoute] string userId)
     {
-        var summary = _badgeService.GetSummary(userId);
+        return Ok(BuildRank(_badgeService.GetSummary(userId)));
+    }
+
+    private static object BuildRank(object summary)
+    {
         var score = (int)(summary.GetType().GetProperty("Score")?.GetValue(summary) ?? 0);
         var tier = RankHelper.GetTier(score);
         var next = RankHelper.GetNextTier(score);
@@ -1127,14 +1175,14 @@ public class AchievementBadgesController : ControllerBase
         var nextMin = next?.MinScore ?? tier.MinScore;
         var progress = next is null ? 100 : (int)Math.Round(100.0 * (score - prevMin) / Math.Max(1, nextMin - prevMin));
 
-        return Ok(new
+        return new
         {
             Score = score,
             Tier = new { tier.Name, Label = FrenchLabels.Tier(tier.Name), tier.MinScore, tier.Color, tier.Icon },
             NextTier = next is null ? null : (object)new { next.Name, Label = FrenchLabels.Tier(next.Name), next.MinScore, next.Color, next.Icon },
             ProgressToNext = progress,
             Tiers = RankHelper.Tiers.Select(t => new { t.Name, Label = FrenchLabels.Tier(t.Name), t.MinScore, t.Color, t.Icon })
-        });
+        };
     }
 
     [HttpGet("ranks")]
