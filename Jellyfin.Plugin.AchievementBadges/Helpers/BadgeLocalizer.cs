@@ -36,7 +36,7 @@ public static class BadgeLocalizer
         var l = (lang ?? "").Trim().ToLowerInvariant();
         if (string.IsNullOrEmpty(l) || l == "default")
         {
-            l = Plugin.Instance?.Configuration?.DefaultLanguage ?? "en";
+            l = Plugin.Instance?.Configuration?.DefaultLanguage ?? "fr";
             l = l.ToLowerInvariant();
         }
         if (!_supported.Contains(l)) l = "en";

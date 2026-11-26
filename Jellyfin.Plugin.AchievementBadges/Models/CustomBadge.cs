@@ -48,6 +48,9 @@ public class CustomBadge
 
     public string Rarity { get; set; } = "Common";
 
+    /// <summary>French label for <see cref="Rarity"/>; the English value stays unchanged.</summary>
+    public string RarityLabel => Jellyfin.Plugin.AchievementBadges.Helpers.FrenchLabels.Rarity(Rarity);
+
     /// <summary>Which media tab the badge appears under in the user UI.
     /// <c>Multi</c> for badges whose criteria span media types.</summary>
     public BadgeMediaType Media { get; set; } = BadgeMediaType.Multi;

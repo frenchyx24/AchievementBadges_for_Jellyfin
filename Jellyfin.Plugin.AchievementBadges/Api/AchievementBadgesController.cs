@@ -1130,10 +1130,10 @@ public class AchievementBadgesController : ControllerBase
         return Ok(new
         {
             Score = score,
-            Tier = new { tier.Name, tier.MinScore, tier.Color, tier.Icon },
-            NextTier = next is null ? null : (object)new { next.Name, next.MinScore, next.Color, next.Icon },
+            Tier = new { tier.Name, Label = FrenchLabels.Tier(tier.Name), tier.MinScore, tier.Color, tier.Icon },
+            NextTier = next is null ? null : (object)new { next.Name, Label = FrenchLabels.Tier(next.Name), next.MinScore, next.Color, next.Icon },
             ProgressToNext = progress,
-            Tiers = RankHelper.Tiers.Select(t => new { t.Name, t.MinScore, t.Color, t.Icon })
+            Tiers = RankHelper.Tiers.Select(t => new { t.Name, Label = FrenchLabels.Tier(t.Name), t.MinScore, t.Color, t.Icon })
         });
     }
 
@@ -1142,7 +1142,7 @@ public class AchievementBadgesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult GetAllRanks()
     {
-        return Ok(RankHelper.Tiers.Select(t => new { t.Name, t.MinScore, t.Color, t.Icon }));
+        return Ok(RankHelper.Tiers.Select(t => new { t.Name, Label = FrenchLabels.Tier(t.Name), t.MinScore, t.Color, t.Icon }));
     }
 
     // ---------- Library completion ----------------------------------
@@ -2562,7 +2562,7 @@ public class AchievementBadgesController : ControllerBase
             ForcePrivacyMode = c?.ForcePrivacyMode ?? false,
             ForceSpoilerMode = c?.ForceSpoilerMode ?? false,
             ForceExtremeSpoilerMode = c?.ForceExtremeSpoilerMode ?? false,
-            DefaultLanguage = c?.DefaultLanguage ?? "en",
+            DefaultLanguage = c?.DefaultLanguage ?? "fr",
             CustomXboxLogoSvg = c?.CustomXboxLogoSvg ?? "",
             ForceHideEquippedShowcase = c?.ForceHideEquippedShowcase ?? false,
             FriendsEnabled = c?.FriendsEnabled ?? true,
@@ -2613,7 +2613,7 @@ public class AchievementBadgesController : ControllerBase
             RestrictBadgeVisibility = c?.RestrictBadgeVisibility ?? false,
             DisabledBadgeCategories = c?.DisabledBadgeCategories ?? new List<string>(),
             WelcomeMessage = c?.WelcomeMessage ?? "",
-            DefaultLanguage = c?.DefaultLanguage ?? "en",
+            DefaultLanguage = c?.DefaultLanguage ?? "fr",
             TracearrUrl = c?.TracearrUrl ?? "",
             TracearrApiToken = c?.TracearrApiToken ?? "",
             CustomXboxLogoSvg = c?.CustomXboxLogoSvg ?? "",

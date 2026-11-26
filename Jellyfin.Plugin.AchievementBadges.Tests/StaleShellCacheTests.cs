@@ -222,11 +222,9 @@ public class StaleShellCacheTests : IDisposable
         // [issue #143] Taken from the target framework, which is what picks the
         // build under test. The runtime can be newer: with roll-forward
         // allowed, the net9.0 tests run on .NET 10.
-#if NET10_0_OR_GREATER
-        const int expected = 1;
-#else
+        // Nflix fork: every package is stamped 3.0.0.0 on purpose, and the
+        // fork's manifest lists that exact version, so both builds use .0.
         const int expected = 0;
-#endif
 
         Assert.Equal(expected, version.Revision);
     }

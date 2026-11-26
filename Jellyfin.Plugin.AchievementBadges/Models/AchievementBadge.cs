@@ -35,6 +35,9 @@ public class AchievementBadge
 
     public string Rarity { get; set; } = "Common";
 
+    /// <summary>French label for <see cref="Rarity"/>; the English value stays unchanged.</summary>
+    public string RarityLabel => Jellyfin.Plugin.AchievementBadges.Helpers.FrenchLabels.Rarity(Rarity);
+
     /// <summary>[v2.1.0 "Open Library"] Records how this unlock was earned.
     /// Lets the M6 "Audit + clean wrongly-awarded daily badges" tool tell
     /// apart genuine real-time earnings from backfill artefacts. Defaults

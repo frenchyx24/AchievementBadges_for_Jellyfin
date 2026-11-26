@@ -16,6 +16,9 @@ public class AchievementDefinition
 
     public string Rarity { get; set; } = "Common";
 
+    /// <summary>French label for <see cref="Rarity"/>; the English value stays unchanged.</summary>
+    public string RarityLabel => Jellyfin.Plugin.AchievementBadges.Helpers.FrenchLabels.Rarity(Rarity);
+
     public int TargetValue { get; set; }
 
     public AchievementMetric Metric { get; set; }
