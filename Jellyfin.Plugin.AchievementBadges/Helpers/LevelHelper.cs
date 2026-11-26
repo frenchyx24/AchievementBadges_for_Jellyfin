@@ -67,4 +67,7 @@ public static class LevelHelper
 
     /// <summary>Level state for a badge list.</summary>
     public static NflixLevelState FromBadges(IEnumerable<AchievementBadge> badges) => FromXp(TotalXp(badges));
+
+    /// <summary>Level state for a badge list plus extra XP (e.g. completed collections).</summary>
+    public static NflixLevelState FromBadges(IEnumerable<AchievementBadge> badges, long extraXp) => FromXp(TotalXp(badges) + Math.Max(0, extraXp));
 }

@@ -14,7 +14,7 @@
     <RootNamespace>Jellyfin.Plugin.AchievementBadges</RootNamespace>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <LangVersion>latest</LangVersion>
-    <Version>3.0.2.0</Version>
+    <Version>3.1.0.0</Version>
     <AnalysisMode>Recommended</AnalysisMode>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
@@ -59,14 +59,14 @@
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
     <JellyfinVersion>10.11.6</JellyfinVersion>
-    <AssemblyVersion>3.0.2.0</AssemblyVersion>
-    <FileVersion>3.0.2.0</FileVersion>
+    <AssemblyVersion>3.1.0.0</AssemblyVersion>
+    <FileVersion>3.1.0.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <JellyfinVersion>12.0.0</JellyfinVersion>
-    <AssemblyVersion>3.0.2.0</AssemblyVersion>
-    <FileVersion>3.0.2.0</FileVersion>
+    <AssemblyVersion>3.1.0.0</AssemblyVersion>
+    <FileVersion>3.1.0.0</FileVersion>
   </PropertyGroup>
 
   <Target Name="AbCheckVersion" BeforeTargets="BeforeBuild">

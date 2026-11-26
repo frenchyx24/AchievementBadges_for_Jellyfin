@@ -68,6 +68,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<RecapService>();
         serviceCollection.AddSingleton<RecommendationService>();
         serviceCollection.AddSingleton<QuestService>();
+        serviceCollection.AddSingleton<SuccesV2Service>();
         serviceCollection.AddSingleton<FriendsService>();
         serviceCollection.AddSingleton<MessagingService>();
         // v2.0 - Power-ups + Shop.
