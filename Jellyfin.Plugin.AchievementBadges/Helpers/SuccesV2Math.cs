@@ -21,7 +21,7 @@ public static class SuccesV2Math
     public const int SeasonTierCount = 30;
 
     /// <summary>XP needed per season-pass tier.</summary>
-    public const int SeasonXpPerTier = 200;
+    public const int SeasonXpPerTier = 500;
 
     /// <summary>Bonus XP granted once per completed collection.</summary>
     public const int CollectionXp = 50;

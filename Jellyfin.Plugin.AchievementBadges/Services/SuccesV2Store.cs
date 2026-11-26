@@ -56,6 +56,12 @@ public sealed class SuccesV2StoreData
 {
     /// <summary>Normalized user id → state.</summary>
     public Dictionary<string, SuccesV2UserState> Users { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Duels between users (3.2.0).</summary>
+    public List<SuccesV3Duel> Duels { get; set; } = new();
+
+    /// <summary>Unlock key ("userId:badgeId") → emoji → user ids who reacted (3.2.0).</summary>
+    public Dictionary<string, Dictionary<string, List<string>>> Reactions { get; set; } = new(StringComparer.Ordinal);
 }
 
 /// <summary>JSON file store (succes-v2.json) guarded by one lock, atomic writes.</summary>
@@ -92,6 +98,18 @@ public sealed class SuccesV2Store
             }
 
             var (value, dirty) = fn(state);
+            if (dirty) SaveLocked(data);
+            return value;
+        }
+    }
+
+    /// <summary>Runs fn on the whole file under the lock; saves when fn reports dirty.</summary>
+    public T UpdateAll<T>(Func<SuccesV2StoreData, (T Value, bool Dirty)> fn)
+    {
+        lock (_lock)
+        {
+            var data = LoadLocked();
+            var (value, dirty) = fn(data);
             if (dirty) SaveLocked(data);
             return value;
         }

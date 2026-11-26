@@ -43,6 +43,7 @@ public class SuccesV2Service
     private readonly ILibraryManager _libraryManager;
     private readonly IUserManager _userManager;
     private readonly ILogger<SuccesV2Service> _logger;
+    internal SuccesV2Store Store => _store;
     private readonly SuccesV2Store _store;
     private readonly ConcurrentDictionary<string, (DateTime At, List<NflixCollectionProgress> Items)> _collectionsCache = new(StringComparer.Ordinal);
 

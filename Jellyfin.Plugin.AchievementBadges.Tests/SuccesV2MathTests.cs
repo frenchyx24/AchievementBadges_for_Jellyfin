@@ -79,10 +79,10 @@ public class SuccesV2MathTests
 
     [Theory]
     [InlineData(0, 0)]
-    [InlineData(199, 0)]
-    [InlineData(200, 1)]
-    [InlineData(5999, 29)]
-    [InlineData(6000, 30)]
+    [InlineData(499, 0)]
+    [InlineData(500, 1)]
+    [InlineData(14999, 29)]
+    [InlineData(15000, 30)]
     [InlineData(100000, 30)]
     [InlineData(-5, 0)]
     public void TierForXp(long xp, int tier) => Assert.Equal(tier, SuccesV2Math.TierForXp(xp));
@@ -91,8 +91,8 @@ public class SuccesV2MathTests
     public void TierRewards_TitleEvery5_FrameOtherwise()
     {
         var s = SuccesV2Math.SeasonAt(new DateTime(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc));
-        Assert.Equal(200, SuccesV2Math.XpRequiredForTier(1));
-        Assert.Equal(6000, SuccesV2Math.XpRequiredForTier(30));
+        Assert.Equal(500, SuccesV2Math.XpRequiredForTier(1));
+        Assert.Equal(15000, SuccesV2Math.XpRequiredForTier(30));
         var t5 = SuccesV2Math.TierReward(s, 5);
         Assert.Equal("title", t5.Type);
         Assert.Equal("2026-automne-titre-5", t5.Id);
