@@ -192,7 +192,7 @@ public class HiddenFromLoginVisibilityTests : IDisposable
         Assert.Empty(_badges.GetPublicEquippedPreview(Hidden, Regular));
         Assert.NotEmpty(_badges.GetPublicEquippedPreview(Hidden, Friend));
 
-        Assert.Equal("One or both users not found.", ErrorOf(_badges.CompareUsers(Regular, Hidden, Regular)));
+        Assert.Equal("Un des utilisateurs est introuvable.", ErrorOf(_badges.CompareUsers(Regular, Hidden, Regular)));
         Assert.Null(ErrorOf(_badges.CompareUsers(Friend, Hidden, Friend)));
     }
 

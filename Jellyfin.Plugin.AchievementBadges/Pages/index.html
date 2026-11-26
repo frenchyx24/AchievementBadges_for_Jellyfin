@@ -4499,7 +4499,7 @@ font-size:0.88em;
             document.getElementById('abFcDisabledBadgeCategories').value = (c.DisabledBadgeCategories || []).join(', ');
             document.getElementById('abFcWelcomeMessage').value = c.WelcomeMessage || '';
             var dlSel = document.getElementById('abFcDefaultLanguage');
-            if (dlSel) dlSel.value = (c.DefaultLanguage || 'en');
+            if (dlSel) dlSel.value = (c.DefaultLanguage || 'fr');
             var uiSel = document.getElementById('abFcDefaultUiStyle');
             if (uiSel) uiSel.value = (c.DefaultUiStyle === 'revamp' ? 'revamp' : 'classic');
             var forceUiEl = document.getElementById('abFcForceDefaultUiStyle');
@@ -4583,7 +4583,7 @@ font-size:0.88em;
             RestrictBadgeVisibility: document.getElementById('abFcRestrictBadgeVisibility').checked,
             DisabledBadgeCategories: categories,
             WelcomeMessage: document.getElementById('abFcWelcomeMessage').value || '',
-            DefaultLanguage: (document.getElementById('abFcDefaultLanguage') || {}).value || 'en',
+            DefaultLanguage: (document.getElementById('abFcDefaultLanguage') || {}).value || 'fr',
             DefaultUiStyle: (document.getElementById('abFcDefaultUiStyle') || {}).value === 'revamp' ? 'revamp' : 'classic',
             ForceDefaultUiStyle: !!(document.getElementById('abFcForceDefaultUiStyle') || {}).checked,
             DefaultToastPosition: (document.getElementById('abFcDefaultToastPosition') || {}).value || 'top-right',

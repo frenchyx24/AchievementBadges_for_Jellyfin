@@ -387,11 +387,9 @@ public class AchievementBadgesController : ControllerBase
     public ActionResult GetNflixAggregate([FromRoute] string userId)
     {
         const string lang = "fr";
-        var badges = _badgeService.GetBadgesForUser(userId);
-        foreach (var b in badges) Helpers.BadgeLocalizer.Localize(b, lang);
-        var equipped = _badgeService.GetEquippedBadges(userId);
-        foreach (var b in equipped) Helpers.BadgeLocalizer.Localize(b, lang);
-        var summary = _badgeService.GetSummary(userId);
+        // Localized inside the service before secret/spoiler masking, so
+        // hidden badges keep their "???" placeholder.
+        var (badges, equipped, summary) = _badgeService.GetNflixSnapshot(userId, lang);
         var level = LevelHelper.FromBadges(badges);
         var season = SeasonHelper.At(DateTime.UtcNow);
 
@@ -2711,7 +2709,7 @@ public class AchievementBadgesController : ControllerBase
         public bool RestrictBadgeVisibility { get; set; } = false;
         public List<string> DisabledBadgeCategories { get; set; } = new();
         public string WelcomeMessage { get; set; } = "";
-        public string DefaultLanguage { get; set; } = "en";
+        public string? DefaultLanguage { get; set; }
 
         // [issue #45] Empty either field disables the Tracearr pass.
         public string TracearrUrl { get; set; } = "";
@@ -2779,10 +2777,10 @@ public class AchievementBadgesController : ControllerBase
         config.RestrictBadgeVisibility = request.RestrictBadgeVisibility;
         config.DisabledBadgeCategories = request.DisabledBadgeCategories ?? new();
         config.WelcomeMessage = request.WelcomeMessage ?? "";
-        // Only accept known language codes; default to "en".
-        var lang = (request.DefaultLanguage ?? "en").ToLowerInvariant();
+        // Only accept known language codes; omitted keeps the stored value, unknown falls back to "fr".
+        var lang = (request.DefaultLanguage ?? config.DefaultLanguage ?? "fr").ToLowerInvariant();
         var allowedLangs = new HashSet<string> { "en", "fr", "es", "de", "it", "pt", "zh", "ja" };
-        if (!allowedLangs.Contains(lang)) lang = "en";
+        if (!allowedLangs.Contains(lang)) lang = "fr";
         config.DefaultLanguage = lang;
         config.TracearrUrl = (request.TracearrUrl ?? "").Trim();
         config.TracearrApiToken = (request.TracearrApiToken ?? "").Trim();

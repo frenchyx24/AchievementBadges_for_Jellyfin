@@ -86,12 +86,12 @@ public class AchievementBadgeService : IDisposable
         var config = Plugin.Instance?.Configuration;
         if (config != null && !config.CompareEnabled)
         {
-            return new { Error = "Compare feature is disabled." };
+            return new { Error = "La comparaison est désactivée." };
         }
 
         if (config?.ForcePrivacyMode ?? false)
         {
-            return new { Error = "Privacy mode is enabled server-wide." };
+            return new { Error = "Le mode confidentialité est activé sur tout le serveur." };
         }
 
         userIdA = NormalizeUserId(userIdA);
@@ -105,12 +105,12 @@ public class AchievementBadgeService : IDisposable
             // used to probe for hidden accounts.
             if (pa is null || pb is null || !CanSee(viewerUserId, userIdA) || !CanSee(viewerUserId, userIdB))
             {
-                return new { Error = "One or both users not found." };
+                return new { Error = "Un des utilisateurs est introuvable." };
             }
 
             if ((pa.Preferences?.HideFromCompare ?? false) || (pb.Preferences?.HideFromCompare ?? false))
             {
-                return new { Error = "One or both users have disabled profile comparison." };
+                return new { Error = "Un des utilisateurs a désactivé la comparaison de profil." };
             }
 
             EvaluateBadges(pa, userIdA, silent: true);
@@ -218,10 +218,10 @@ public class AchievementBadgeService : IDisposable
                     UserId = e.UserId,
                     UserName = e.UserName,
                     BadgeId = e.Badge.Id,
-                    Title = e.Badge.Title,
+                    Title = FrenchLabels.BadgeTitle(e.Badge.Id, e.Badge.Title),
                     Rarity = e.Badge.Rarity,
                     Icon = e.Badge.Icon,
-                    Category = e.Badge.Category
+                    Category = FrenchLabels.Category(e.Badge.Category)
                 })
                 .ToList();
             return new { Page = page, PageSize = pageSize, TotalPages = totalPages, TotalEntries = total, Entries = pageEntries };
@@ -309,7 +309,7 @@ public class AchievementBadgeService : IDisposable
                     CategoryLabel = g.Key,
                     Total = g.Count(),
                     Unlocked = g.Count(b => b.Unlocked),
-                    Percent = g.Count() == 0 ? 0 : (int)Math.Round(100.0 * g.Count(b => b.Unlocked) / g.Count())
+                    Percent = g.Count() == 0 ? 0 : (int)Math.Floor(100.0 * g.Count(b => b.Unlocked) / g.Count())
                 })
                 .OrderByDescending(o => (int)o.GetType().GetProperty("Percent")!.GetValue(o)!)
                 .ToList();
@@ -361,10 +361,10 @@ public class AchievementBadgeService : IDisposable
                 .Select(b => (object)new
                 {
                     BadgeId = b.Id,
-                    b.Title,
+                    Title = FrenchLabels.BadgeTitle(b.Id, b.Title),
                     b.Rarity,
                     b.Icon,
-                    b.Category,
+                    Category = FrenchLabels.Category(b.Category),
                     UnlockedAt = b.UnlockedAt
                 })
                 .ToList();
@@ -472,7 +472,6 @@ public class AchievementBadgeService : IDisposable
                 var yesterday = DateOnly.FromDateTime(DateTime.Today.AddDays(-1));
                 if (profile.Counters.LastWatchDate.Value >= yesterday)
                 {
-                    var streak = profile.Counters.BestWatchStreak;
                     goals.Insert(0, new
                     {
                         BadgeId = (string?)null,
@@ -481,7 +480,7 @@ public class AchievementBadgeService : IDisposable
                         Remaining = 1,
                         Target = 1,
                         Current = 0,
-                        Rarity = "Legendary"
+                        Rarity = "Common"
                     });
                 }
             }
@@ -585,7 +584,7 @@ public class AchievementBadgeService : IDisposable
                 [AchievementMetric.LateNightSessions] = (double)c.LateNightSessions / daysActive,
                 [AchievementMetric.EarlyMorningSessions] = (double)c.EarlyMorningSessions / daysActive,
                 [AchievementMetric.WeekendSessions] = (double)c.WeekendSessions / daysActive,
-                [AchievementMetric.DaysWatched] = 1.0,
+                [AchievementMetric.DaysWatched] = (double)c.DaysWatched / Math.Max(1, daysActive),
                 [AchievementMetric.DaysLoggedIn] = (double)c.DaysLoggedIn / Math.Max(1, daysActive),
                 [AchievementMetric.TotalMinutesWatched] = (double)c.TotalMinutesWatched / daysActive,
                 [AchievementMetric.RewatchCount] = (double)c.RewatchCount / daysActive
@@ -757,7 +756,7 @@ public class AchievementBadgeService : IDisposable
                 // profile — prevents attackers from bloating the pinned list
                 // with arbitrary strings.
                 var exists = profile.Badges.Any(b => string.Equals(b.Id, badgeId, StringComparison.OrdinalIgnoreCase));
-                if (!exists) return new { Success = false, Message = "Badge not found." };
+                if (!exists) return new { Success = false, Message = "Badge introuvable." };
                 // Cap total pinned entries to bound profile size.
                 if (profile.PinnedBadgeIds.Count >= 50)
                 {
@@ -1084,7 +1083,7 @@ public class AchievementBadgeService : IDisposable
         {
             var profile = GetOrCreateProfile(userId);
             var def = GetActiveDefinitions().FirstOrDefault(d => d.Id.Equals(badgeId, StringComparison.OrdinalIgnoreCase));
-            if (def is null) return new { Success = false, Message = "Badge not found." };
+            if (def is null) return new { Success = false, Message = "Badge introuvable." };
 
             var cost = GetPurchaseCost(def.Rarity);
             if (profile.ScoreBank < cost)
@@ -1383,11 +1382,54 @@ public class AchievementBadgeService : IDisposable
         userId = NormalizeUserId(userId);
         lock (_lock)
         {
-            var profile = GetOrCreateProfile(userId);
-            EvaluateBadges(profile, userId);
-            Save();
+            var profile = EvaluateAndSaveIfChanged(userId);
             return GetEnabledBadgeClones(profile);
         }
+    }
+
+    /// <summary>
+    /// One evaluation for the Nflix aggregate: badges (localized, then
+    /// secret/spoiler masked), equipped badges and summary, all from the
+    /// same snapshot under the lock.
+    /// </summary>
+    public (List<AchievementBadge> Badges, List<AchievementBadge> Equipped, object Summary) GetNflixSnapshot(string userId, string lang)
+    {
+        userId = NormalizeUserId(userId);
+        lock (_lock)
+        {
+            var profile = EvaluateAndSaveIfChanged(userId);
+            return (GetEnabledBadgeClones(profile, lang), BuildEquippedClones(profile, lang), BuildSummary(profile));
+        }
+    }
+
+    // Caller holds _lock. Saves only when the profile is new or the
+    // evaluation changed a badge, so plain GETs don't rewrite the store.
+    private UserAchievementProfile EvaluateAndSaveIfChanged(string userId)
+    {
+        var existed = _userProfiles.ContainsKey(userId);
+        var profile = GetOrCreateProfile(userId);
+        var before = BadgeFingerprint(profile);
+        EvaluateBadges(profile, userId);
+        if (!existed || before != BadgeFingerprint(profile))
+        {
+            Save();
+        }
+        return profile;
+    }
+
+    private static int BadgeFingerprint(UserAchievementProfile profile)
+    {
+        var h = new HashCode();
+        h.Add(profile.Badges.Count);
+        foreach (var b in profile.Badges)
+        {
+            h.Add(b.Id);
+            h.Add(b.CurrentValue);
+            h.Add(b.Unlocked);
+            h.Add(b.UnlockedAt);
+        }
+        foreach (var id in profile.EquippedBadgeIds) h.Add(id);
+        return h.ToHashCode();
     }
 
     public List<AchievementBadge> GetAllBadgesForUserIncludingDisabled(string userId)
@@ -1441,7 +1483,7 @@ public class AchievementBadgeService : IDisposable
             if (isSecret && !clone.Unlocked)
             {
                 clone.Title = "???";
-                clone.Description = "Hidden achievement — keep watching to discover it.";
+                clone.Description = "Succès secret — continuez à regarder pour le découvrir.";
                 clone.Icon = "help";
             }
             else if (spoilerMode && !clone.Unlocked)
@@ -1467,22 +1509,22 @@ public class AchievementBadgeService : IDisposable
             // shipping raw English text — so changing language in settings
             // would flip all UI strings to French/Portuguese/etc. but the
             // equipped-badges row would stay English until next unlock).
-            var lang = profile.Preferences?.Language;
-            var equipped = profile.EquippedBadgeIds
-                .Where(IsBadgeEnabled)
-                .Select(id => profile.Badges.FirstOrDefault(b => b.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
-                .Where(b => b is not null)
-                .Select(b =>
-                {
-                    var clone = CloneBadge(b!);
-                    Helpers.BadgeLocalizer.Localize(clone, lang);
-                    return clone;
-                })
-                .ToList();
-
-            return equipped;
+            return BuildEquippedClones(profile, profile.Preferences?.Language);
         }
     }
+
+    private List<AchievementBadge> BuildEquippedClones(UserAchievementProfile profile, string? lang)
+        => profile.EquippedBadgeIds
+            .Where(IsBadgeEnabled)
+            .Select(id => profile.Badges.FirstOrDefault(b => b.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+            .Where(b => b is not null)
+            .Select(b =>
+            {
+                var clone = CloneBadge(b!);
+                Helpers.BadgeLocalizer.Localize(clone, lang);
+                return clone;
+            })
+            .ToList();
 
     public bool EquipBadge(string userId, string badgeId, out string message)
     {
@@ -1496,7 +1538,7 @@ public class AchievementBadgeService : IDisposable
 
             if (badge is null)
             {
-                message = "Badge not found.";
+                message = "Badge introuvable.";
                 return false;
             }
 
@@ -2490,11 +2532,17 @@ public class AchievementBadgeService : IDisposable
         {
             var profile = GetOrCreateProfile(userId);
             EvaluateBadges(profile, userId);
+            return BuildSummary(profile);
+        }
+    }
 
+    private BadgeSummary BuildSummary(UserAchievementProfile profile)
+    {
+        {
             var enabledBadges = profile.Badges.Where(b => IsBadgeEnabled(b.Id)).ToList();
             var unlocked = enabledBadges.Count(b => b.Unlocked);
             var total = enabledBadges.Count;
-            var percentage = total == 0 ? 0 : Math.Round((double)unlocked / total * 100.0, 1);
+            var percentage = total == 0 ? 0 : Math.Floor((double)unlocked / total * 1000.0) / 10.0;
             var baseScore = AchievementScoreHelper.GetTotalUnlockedScore(enabledBadges);
             var multiplier = 1.0 + 0.5 * profile.PrestigeLevel;
             var score = (int)Math.Round(baseScore * multiplier);
@@ -2593,7 +2641,7 @@ public class AchievementBadgeService : IDisposable
                     var enabled = profile.Badges.Where(b => IsBadgeEnabled(b.Id)).ToList();
                     var unlocked = enabled.Count(b => b.Unlocked);
                     var total = enabled.Count;
-                    var percentage = total == 0 ? 0 : Math.Round((double)unlocked / total * 100.0, 1);
+                    var percentage = total == 0 ? 0 : Math.Floor((double)unlocked / total * 1000.0) / 10.0;
                     var score = AchievementScoreHelper.GetTotalUnlockedScore(enabled);
                     // [issue #42] Published here first, so the public summary
                     // only ever repeats what the leaderboard already shows.
@@ -2866,16 +2914,21 @@ public class AchievementBadgeService : IDisposable
             {
                 return _rarityCache;
             }
-            var totalUsers = Math.Max(1, _userProfiles.Count);
+            var unlockedSets = _userProfiles.Values
+                .Where(p => UserExists(p.UserId))
+                .Select(p => new HashSet<string>(
+                    p.Badges.Where(x => x.Unlocked).Select(x => x.Id),
+                    StringComparer.OrdinalIgnoreCase))
+                .ToList();
+            var totalUsers = Math.Max(1, unlockedSets.Count);
             var result = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             foreach (var def in GetActiveDefinitions())
             {
                 if (!IsBadgeEnabled(def.Id)) continue;
                 var unlockCount = 0;
-                foreach (var p in _userProfiles.Values)
+                foreach (var set in unlockedSets)
                 {
-                    var b = p.Badges.FirstOrDefault(x => x.Id.Equals(def.Id, StringComparison.OrdinalIgnoreCase));
-                    if (b != null && b.Unlocked) unlockCount++;
+                    if (set.Contains(def.Id)) unlockCount++;
                 }
                 result[def.Id] = Math.Round(100.0 * unlockCount / totalUsers, 1);
             }
@@ -2904,7 +2957,7 @@ public class AchievementBadgeService : IDisposable
                 .GroupBy(b => b.Id)
                 .OrderByDescending(g => g.Count())
                 .Select(g => g.First().Title)
-                .FirstOrDefault() ?? "None";
+                .FirstOrDefault() ?? "Aucun";
 
             return new ServerStats
             {
@@ -4020,7 +4073,7 @@ public class AchievementBadgeService : IDisposable
         }
     }
 
-    private List<AchievementBadge> GetEnabledBadgeClones(UserAchievementProfile profile)
+    private List<AchievementBadge> GetEnabledBadgeClones(UserAchievementProfile profile, string? langOverride = null)
     {
         var defsById = GetActiveDefinitions()
             .ToDictionary(d => d.Id, d => d, StringComparer.OrdinalIgnoreCase);
@@ -4032,7 +4085,7 @@ public class AchievementBadgeService : IDisposable
         var adminForceExtremeSpoiler = Plugin.Instance?.Configuration?.ForceExtremeSpoilerMode ?? false;
         var extremeSpoilerMode = userExtremeSpoiler || adminForceExtremeSpoiler;
         var disabledCategories = Plugin.Instance?.Configuration?.DisabledBadgeCategories;
-        var lang = profile.Preferences?.Language ?? "default";
+        var lang = langOverride ?? profile.Preferences?.Language ?? "default";
 
         var result = new List<AchievementBadge>();
         foreach (var b in profile.Badges)
@@ -4053,7 +4106,7 @@ public class AchievementBadgeService : IDisposable
             if (isSecret && !clone.Unlocked)
             {
                 clone.Title = "???";
-                clone.Description = "Hidden achievement — keep watching to discover it.";
+                clone.Description = "Succès secret — continuez à regarder pour le découvrir.";
                 clone.Icon = "help";
             }
             else if (spoilerMode && !clone.Unlocked)

@@ -139,7 +139,7 @@ public static class FrenchLabels
     public static string BadgeTitle(string? id, string? fallback)
     {
         if (string.IsNullOrEmpty(id)) return fallback ?? string.Empty;
-        return BadgeLocalizer.Lookup(id, null).title ?? fallback ?? string.Empty;
+        return BadgeLocalizer.Lookup(id, "fr").title ?? fallback ?? string.Empty;
     }
 
     private static string S(int n, string singular, string plural) => n == 1 ? singular : plural;
