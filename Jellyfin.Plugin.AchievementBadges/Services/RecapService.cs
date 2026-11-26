@@ -59,7 +59,7 @@ public class RecapService
 
         var badgesUnlocked = profile.Badges
             .Where(b => b.Unlocked && b.UnlockedAt.HasValue && b.UnlockedAt.Value >= DateTimeOffset.Now.AddDays(-days))
-            .Select(b => new { b.Id, b.Title, b.Rarity, b.UnlockedAt })
+            .Select(b => new { b.Id, Title = Helpers.FrenchLabels.BadgeTitle(b.Id, b.Title), b.Rarity, b.UnlockedAt })
             .OrderByDescending(b => b.UnlockedAt)
             .ToList();
 

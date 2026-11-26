@@ -27,3 +27,4 @@ dist/
 
 # local release staging (downloaded zips, sigs)
 .tmp/
+out/

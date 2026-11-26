@@ -108,7 +108,7 @@ public class RecommendationService
             return new
             {
                 BadgeId = def.Id,
-                BadgeTitle = def.Title,
+                BadgeTitle = Helpers.FrenchLabels.BadgeTitle(def.Id, def.Title),
                 Progress = new { Current = profile?.Badges.FirstOrDefault(b => b.Id == def.Id)?.CurrentValue ?? 0, Target = def.TargetValue },
                 Items = projected
             };

@@ -300,10 +300,13 @@ public class AchievementBadgeService : IDisposable
             EvaluateBadges(profile, userId, silent: true);
             return profile.Badges
                 .Where(b => IsBadgeEnabled(b.Id))
-                .GroupBy(b => b.Category ?? "General")
+                .GroupBy(b => FrenchLabels.Category(b.Category))
                 .Select(g => (object)new
                 {
-                    Category = g.Key,
+                    // English name kept as the key when one is known; the
+                    // French label is the display value (duplicates merged).
+                    Category = FrenchLabels.CategoryKey(g.Key),
+                    CategoryLabel = g.Key,
                     Total = g.Count(),
                     Unlocked = g.Count(b => b.Unlocked),
                     Percent = g.Count() == 0 ? 0 : (int)Math.Round(100.0 * g.Count(b => b.Unlocked) / g.Count())
@@ -449,11 +452,11 @@ public class AchievementBadgeService : IDisposable
 
             foreach (var item in close)
             {
-                var action = GenerateGoalAction(item.Def!.Metric, item.Remaining);
+                var action = FrenchLabels.GoalAction(item.Def!.Metric, item.Remaining);
                 goals.Add(new
                 {
                     BadgeId = item.Badge.Id,
-                    Title = item.Badge.Title,
+                    Title = FrenchLabels.BadgeTitle(item.Badge.Id, item.Badge.Title),
                     Action = action,
                     Remaining = item.Remaining,
                     Target = item.Def!.TargetValue,
@@ -473,8 +476,8 @@ public class AchievementBadgeService : IDisposable
                     goals.Insert(0, new
                     {
                         BadgeId = (string?)null,
-                        Title = "Keep your streak alive",
-                        Action = "Watch any item today to keep the streak going",
+                        Title = "Gardez votre série en vie",
+                        Action = "Regardez un titre aujourd'hui pour prolonger votre série",
                         Remaining = 1,
                         Target = 1,
                         Current = 0,
@@ -485,36 +488,6 @@ public class AchievementBadgeService : IDisposable
 
             return new { Goals = goals };
         }
-    }
-
-    private static string GenerateGoalAction(AchievementMetric metric, int remaining)
-    {
-        return metric switch
-        {
-            AchievementMetric.MoviesWatched => "Watch " + remaining + " more movie" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.TotalItemsWatched => "Watch " + remaining + " more item" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.SeriesCompleted => "Finish " + remaining + " more series",
-            AchievementMetric.LateNightSessions => "Have " + remaining + " more late-night session" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.EarlyMorningSessions => "Catch " + remaining + " more early-morning session" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.WeekendSessions => "Have " + remaining + " more weekend session" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.UniqueDecadesWatched => "Watch from " + remaining + " new decade" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.UniqueCountriesWatched => "Watch from " + remaining + " new countr" + (remaining == 1 ? "y" : "ies"),
-            AchievementMetric.UniqueLanguagesWatched => "Watch in " + remaining + " new language" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.UniqueGenresWatched => "Explore " + remaining + " new genre" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.UniqueLibrariesVisited => "Watch from " + remaining + " new librar" + (remaining == 1 ? "y" : "ies"),
-            AchievementMetric.TotalMinutesWatched => "Watch " + Math.Round(remaining / 60.0) + " more hour" + (remaining < 120 ? "" : "s"),
-            AchievementMetric.DaysWatched => "Watch on " + remaining + " more day" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.RewatchCount => "Rewatch " + remaining + " more item" + (remaining == 1 ? "" : "s"),
-            // [issue #115] Games.
-            AchievementMetric.GamePlays => "Play " + remaining + " more game session" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.GamePlayHours => "Play " + remaining + " more hour" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.GameHours => "Play " + remaining + " more hour" + (remaining == 1 ? "" : "s") + " of this game",
-            AchievementMetric.UniqueGamesPlayed => "Play " + remaining + " new game" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.UniqueGamePlatforms => "Play on " + remaining + " new platform" + (remaining == 1 ? "" : "s"),
-            AchievementMetric.GamePlatformGames => "Play " + remaining + " more game" + (remaining == 1 ? "" : "s") + " on this platform",
-            AchievementMetric.GameStudioGames => "Play " + remaining + " more game" + (remaining == 1 ? "" : "s") + " from this studio",
-            _ => remaining + " more needed"
-        };
     }
 
     public void RecordCompareHistory(string userIdA, string userIdB)
@@ -637,7 +610,7 @@ public class AchievementBadgeService : IDisposable
                 etas.Add(new
                 {
                     BadgeId = badge.Id,
-                    Title = badge.Title,
+                    Title = FrenchLabels.BadgeTitle(badge.Id, badge.Title),
                     Current = badge.CurrentValue,
                     Target = def.TargetValue,
                     DaysRemaining = daysRemaining,
